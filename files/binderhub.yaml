@@ -1,0 +1,58 @@
+registry:
+  url: "{{ jupyter_docker_registry_url }}"
+  username: "{{ jupyter_docker_registry_username }}"
+  password: "{{ docker_reg_passwd }}"
+
+config:
+  BinderHub:
+    hub_url: "https://{{ jupyter_ingress_hostname }}/"
+    use_registry: true
+    image_prefix: "{{ jupyter_docker_registry_image_prefix }}"
+    debug: true
+  DockerRegistry:
+    token_url: "{{ jupyter_docker_registry_token_url }}"
+
+service:
+  type: ClusterIP
+
+debug:
+  enabled: true
+
+jupyterhub:
+  singleuser:
+    storage:
+      type: none
+  hub:
+    db:
+      type: sqlite-memory
+    services:
+      binder:
+        apiToken: "{{ jupyter_binder_api_token }}"
+  proxy:
+    secretToken: "{{ jupyter_proxy_token }}"
+    service:
+      type: ClusterIP
+
+  ingress:
+    enabled: true
+    hosts:
+      - "{{ jupyter_ingress_hostname }}"
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ jupyter_ingress_hostname }}"
+      kubernetes.io/ingress.class: "nginx"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    tls:
+      - hosts:
+          - "{{ jupyter_ingress_hostname }}"
+
+ingress:
+  enabled: true
+  hosts:
+    - "{{ jupyter_ingress_binder_hostname }}"
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "{{ jupyter_ingress_binder_hostname }}"
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  tls:
+    - hosts:
+        - "{{ jupyter_ingress_binder_hostname }}"

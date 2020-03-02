@@ -1,0 +1,27 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: issuer-letsencrypt
+  namespace: "{{ cert_manager_namespace }}"
+spec:
+  # https://github.com/jetstack/cert-manager/blob/master/pkg/apis/certmanager/v1alpha1/types_issuer.go
+  acme:
+    # Development
+    #server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # Production
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: "{{ letsencrypt_email }}"
+    privateKeySecretRef:
+      name: account-private-key-secret
+
+    solvers:
+      - selector: {}
+        dns01:
+          name: acme-dns01-provider
+          rfc2136:
+            nameserver: "{{ rfc2136_nameserver }}"
+            tsigKeyName: "{{ rfc2136_tsigKeyname }}"
+            tsigAlgorithm: "{{ rfc2136_tsigAlgLetsencrypt  }}"
+            tsigSecretSecretRef:
+              name: tsig-secret
+              key: tsig-secret-key

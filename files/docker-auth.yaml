@@ -1,0 +1,79 @@
+configmap:
+  data:
+    token:
+      issuer: "{{ jupyter_docker_registry_cert_issuer }}"
+      expiration: 900
+    users:
+      "{{ jupyter_docker_registry_username }}":
+        password: "{{ docker_reg_pw_hash }}"
+      "": {} # Allow anonymous (no "docker login") access.
+    acl:
+      - match: { account: "{{ jupyter_docker_registry_username }}" }
+        actions: ["*"]
+        comment: "User {{ jupyter_docker_registry_username }} has full access to everything."
+      - match: { account: "" }
+        actions: ["pull"]
+        comment: "Anonymous users can pull"
+secret:
+  data:
+    server:
+      certificate: "{{ docker_registry_cert_base64 }}"
+      key: "{{ docker_registry_key_base64 }}"
+
+registry:
+  enabled: true
+
+logging:
+  level: 5
+
+ingress:
+  enabled: true
+  hosts:
+    - "{{ jupyter_docker_registry_auth_hostname }}"
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "{{ jupyter_docker_registry_auth_hostname }}"
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  tls:
+    - hosts:
+        - "{{ jupyter_docker_registry_auth_hostname }}"
+
+docker-registry:
+  configData:
+    log:
+      level: debug
+      accesslog:
+        disabled: false
+    auth:
+      token:
+        autoredirect: false
+        issuer: "{{ jupyter_docker_registry_cert_issuer }}"
+        realm: "https://{{ jupyter_docker_registry_auth_hostname }}/auth"
+        service: "token-service"
+        rootcertbundle: "/tokenAuthRootCertBundle/cert.pem"
+
+  ingress:
+    enabled: true
+    hosts:
+      - "{{ jupyter_docker_registry_hostname }}"
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: "{{ jupyter_docker_registry_hostname }}"
+      kubernetes.io/ingress.class: "nginx"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    tls:
+      - hosts:
+          - "{{ jupyter_docker_registry_hostname }}"
+
+  extraVolumeMounts:
+    - name: token-auth-root-cert-bundle
+      mountPath: /tokenAuthRootCertBundle
+      readOnly: true
+
+  extraVolumes:
+    - name: token-auth-root-cert-bundle
+      secret:
+        secretName: "{{ name }}-docker-registry-cert"
+        items:
+          - key: tokenAuthRootCertBundle
+            path: cert.pem

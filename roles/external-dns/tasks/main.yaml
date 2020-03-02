@@ -1,0 +1,28 @@
+- name: Create namespace for external-dns
+  k8s:
+    name: "{{ external_dns_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Check if already installed
+  shell: helm status -n '{{ external_dns_namespace }}' '{{ external_dns_release_name }}'
+  ignore_errors: True
+  register: external_dns_status
+
+- name: Create temporary file with helm values for external DNS
+  tempfile:
+    state: file
+    suffix: external-dns-config.yaml
+  register: external_dns_temp_config
+  when: external_dns_status.rc != 0
+
+- name: Render template content to temporary file
+  template:
+    src: files/external-dns.yaml
+    dest: "{{ external_dns_temp_config.path }}"
+  when: external_dns_status.rc != 0
+
+- name: Install external-dns via helm
+  shell: "helm install --namespace {{ external_dns_namespace }} -f '{{ external_dns_temp_config.path }}' '{{ external_dns_release_name }}' 'stable/external-dns'"
+  when: external_dns_status.rc != 0

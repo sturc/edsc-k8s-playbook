@@ -1,0 +1,42 @@
+---
+- name: Create namespace
+  k8s:
+    name: "{{ binder_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Check if binder is already installed
+  shell: helm status -n '{{ binder_namespace }}' '{{ binder_release_name }}'
+  ignore_errors: True
+  register: binder_status
+
+- name: Delete existing deployment when newly creating binderhub
+  shell: helm uninstall  -n '{{ binder_namespace }}' '{{ jupyter_docker_registry_release_name }}'
+  ignore_errors: True
+  when: binder_status.rc != 0
+
+- name: Password hashes
+  include: passwd.yaml
+  when: binder_status.rc != 0
+
+- name: Certificates
+  include: cert.yaml
+  when: binder_status.rc != 0
+
+- name: Delete potentially existing docker registry and wait until delete completes
+  shell: "helm status -n '{{ binder_namespace }}' '{{ jupyter_docker_registry_release_name }}'"
+  ignore_errors: True
+  register: rc_status
+  retries: 30
+  delay: 5
+  until: rc_status != 0
+  when: binder_status.rc != 0
+
+- name: Docker registry
+  include: docker-reg.yaml
+  when: binder_status.rc != 0
+
+- name: Binderhub
+  include: binder.yaml
+  when: binder_status.rc != 0

@@ -1,0 +1,51 @@
+- name: Create namespace
+  k8s:
+    name: "{{ hadoop_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Check if already installed
+  shell: helm status -n '{{ hadoop_namespace }}' '{{ hadoop_release_name }}'
+  ignore_errors: True
+  register: hadoop_status
+
+- name: Install via helm
+  shell: "helm install '--namespace={{ hadoop_namespace }}' --set hdfs.dataNode.replicas={{ hadoop_data_nodes }} --set hdfs.webhdfs.enabled=true --set 'yarn.nodeManager.replicas={{ hadoop_yarn_nodes }}' '{{ hadoop_release_name }}' 'stable/hadoop'"
+  when: hadoop_status.rc != 0
+
+- name: Check if knox is already installed
+  shell: helm status -n '{{ hadoop_namespace }}' '{{ knox_release_name }}'
+  ignore_errors: True
+  register: knox_status
+  when:
+    - knox_enable
+
+- name: Add https://pfisterer.github.io/apache-knox-helm/ repo to helm
+  shell: "helm repo add pfisterer-knox https://pfisterer.github.io/apache-knox-helm/"
+  when:
+    - knox_enable
+    - knox_status.rc != 0
+
+- name: Update helm repos
+  shell: "helm repo update"
+  when:
+    - knox_enable
+    - knox_status.rc != 0
+
+- name: Create temporary file with helm values
+  tempfile:
+    state: file
+    suffix: knox-config.yaml
+  register: knox_temp_config
+
+- name: Render template content to temporary file
+  template:
+    src: files/knox.yaml
+    dest: "{{ knox_temp_config.path }}"
+
+- name: Install via helm
+  shell: "helm install '--namespace={{ hadoop_namespace }}' -f '{{ knox_temp_config.path }}' '{{ knox_release_name }}' pfisterer-knox/apache-knox-helm"
+  when:
+    - knox_enable
+    - knox_status.rc != 0

@@ -1,0 +1,31 @@
+- name: Generate password
+  vars:
+    pwd_alias: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+  set_fact:
+    docker_reg_passwd: "{{ pwd_alias }}"
+
+- name: Create temporary file for password
+  tempfile:
+    state: file
+    suffix: tmp.htpasswd
+  register: docker_reg_htpasswd_temp_file
+
+- name: Generate password crypt
+  htpasswd:
+    password: "{{ docker_reg_passwd }}"
+    name: "foobar"
+    path: "{{ docker_reg_htpasswd_temp_file.path }}"
+    crypt_scheme: bcrypt
+
+- name: Extract hash
+  vars:
+    contents: "{{ lookup('file', docker_reg_htpasswd_temp_file.path) }}"
+  set_fact:
+    htpasswd_line: "{{ contents }}"
+    docker_reg_pw_hash: "{{ contents | regex_replace('^foobar:', '')  }}"
+
+- name: Debug
+  debug:
+    msg:
+      - "htpasswd line: {{ htpasswd_line }}"
+      - "pw hash: {{ docker_reg_pw_hash }}"

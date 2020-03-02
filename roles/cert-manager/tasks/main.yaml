@@ -1,0 +1,69 @@
+- name: Create namespace for external-dns
+  k8s:
+    name: "{{ cert_manager_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Check if already installed
+  shell: helm status -n '{{ cert_manager_namespace }}' '{{ cert_manager_release_name }}'
+  ignore_errors: True
+  register: cert_manager_status
+
+- name: Set variable to determine whether cert-manager must be installed
+  set_fact:
+    cert_manager_must_be_installed: "{{ cert_manager_status.rc != 0 }}"
+
+#- name: Disable cert-manager validation on namespace {{ cert_manager_namespace }}
+#  shell: "kubectl label --overwrite namespace {{ cert_manager_namespace }} cert-manager.io/disable-validation=true"
+#  when: cert_manager_must_be_installed
+
+- name: Delete existing custom ressource definitions for cert-manager
+  shell: kubectl delete crd certificates.cert-manager.io issuers.cert-manager.io clusterissuers.cert-manager.io
+  ignore_errors: True
+  when: cert_manager_must_be_installed
+
+- name: Add custom ressource definitions for cert-manager
+  shell: kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
+  ignore_errors: True
+  when: cert_manager_must_be_installed
+
+- name: Add https://charts.jetstack.io repo to helm
+  shell: "helm repo add jetstack https://charts.jetstack.io"
+  when: cert_manager_must_be_installed
+
+- name: Update helm repos
+  shell: "helm repo update"
+  when: cert_manager_must_be_installed
+
+#- name: Delete potentially existing serviceaccount
+#  shell: "kubectl delete serviceaccount cert-manager -n {{ cert_manager_namespace }}"
+#  ignore_errors: True
+#  when: cert_manager_must_be_installed
+
+- name: Install cert-manager via helm
+  shell: "helm install --namespace {{ cert_manager_namespace }} --version {{ cert_manager_version }} --set 'image.tag={{ cert_manager_image_tag }}' --set 'extraArgs[0]=--v={{ cert_manager_verbosity }}' --set 'webhook.enabled=false' --set ingressShim.defaultIssuerName=issuer-letsencrypt --set ingressShim.defaultIssuerKind=Issuer '{{ cert_manager_release_name }}' 'jetstack/cert-manager'"
+  when: cert_manager_must_be_installed
+
+# If you would also like to use the old kube-lego kubernetes.io/tls-acme: "true" annotation for fully automated TLS, you will need to configure a default Issuer when deploying cert-manager. This can be done by adding the following --set when deploying using Helm:
+# --set ingressShim.defaultIssuerName=letsencrypt-prod --set ingressShim.defaultIssuerKind=ClusterIssuer
+
+- name: Delete existing secret
+  shell: "kubectl -n {{ cert_manager_namespace }} delete secret tsig-secret"
+  ignore_errors: True
+
+- name: Create secret
+  shell: "kubectl -n {{ cert_manager_namespace }} create secret generic tsig-secret --from-literal=tsig-secret-key={{ rfc2136_tsigSecret }}"
+
+- name: Create a letsencrypt issuer
+  k8s:
+    state: present
+    definition: "{{ lookup('template', '{{ playbook_dir }}/files/letsencrypt-issuer.yaml') }}"
+
+- name: Create wildcard certificate
+  k8s:
+    state: present
+    definition: "{{ lookup('template', '{{ playbook_dir }}/files/certificate.yaml') }}"
+#- name: Enable cert-manager validation on namespace {{ cert_manager_namespace }}
+#  shell: "kubectl label --overwrite namespace {{ cert_manager_namespace }} certmanager.k8s.io/disable-validation=false"
+

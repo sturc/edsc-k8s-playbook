@@ -1,0 +1,24 @@
+image:
+  pullPolicy: "Always"
+
+knox:
+  servicetype: ClusterIP
+
+  hadoop:
+    nameNodeUrl: "hdfs://{{ hadoop_release_name }}-hadoop-hdfs-nn:9000/"
+    resourceManagerUrl: "http://{{ hadoop_release_name }}-hadoop-yarn-rm:8088/ws"
+    webHdfsUrl: "http://{{ hadoop_release_name }}-hadoop-hdfs-nn:50070/webhdfs"
+    hdfsUIUrl: "http://{{ hadoop_release_name }}-hadoop-hdfs-nn:50070/"
+    yarnUIUrl: "http://{{ hadoop_release_name }}-hadoop-yarn-ui:8088/"
+
+ingress:
+  enabled: true
+  hosts:
+    - "{{ knox_ingress_hostname }}"
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "{{ knox_ingress_hostname }}"
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  tls:
+    - hosts:
+        - "{{ knox_ingress_hostname }}"

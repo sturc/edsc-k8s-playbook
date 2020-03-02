@@ -1,0 +1,24 @@
+- name: Delete deployments
+  hosts: localhost
+  gather_facts: false
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
+
+  tasks:
+    - shell: "helm uninstall -n '{{cert_manager_namespace }}' '{{ cert_manager_release_name }}'"
+      ignore_errors: True
+
+    - shell: "helm uninstall -n '{{external_dns_namespace }}' '{{ external_dns_release_name }}'"
+      ignore_errors: True
+
+    - shell: "helm uninstall -n '{{hadoop_namespace }}' '{{ hadoop_release_name }}'"
+      ignore_errors: True
+
+    - shell: "helm uninstall -n '{{binder_namespace }}' '{{ binder_release_name }}'"
+      ignore_errors: True
+
+    - shell: "helm uninstall -n '{{binder_namespace }}' '{{ jupyter_docker_registry_release_name }}'"
+      ignore_errors: True
+
+    - shell: "helm uninstall -n '{{ k8s_ingress_namespace }}' '{{ k8s_ingress_release_name }}'"
+      ignore_errors: True

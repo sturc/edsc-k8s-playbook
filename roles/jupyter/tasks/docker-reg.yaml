@@ -1,0 +1,42 @@
+# Render the certificate to a file
+- name: Create temporary file with the secret certificate
+  tempfile:
+    state: file
+    suffix: docker-reg-secret.yaml
+  register: docker_reg_secret_config
+
+- name: Delete existing secret
+  shell: "kubectl -n {{ binder_namespace }} delete secret {{ name }}-docker-registry-cert"
+  ignore_errors: True
+
+- name: Render secret yaml content to temporary file
+  template:
+    src: files/docker-reg-secret.yaml
+    dest: "{{ docker_reg_secret_config.path }}"
+
+- name: Create secret
+  shell: "kubectl apply -f '{{ docker_reg_secret_config.path }}'"
+
+# Render the config to a temp file
+- name: Create temporary file with helm values
+  tempfile:
+    state: file
+    suffix: docker-auth.yaml
+  register: docker_reg_temp_config
+
+- name: Render template content to temporary file
+  template:
+    src: files/docker-auth.yaml
+    dest: "{{ docker_reg_temp_config.path }}"
+
+- name: Add https://pfisterer.github.io/docker_auth/ repo to helm
+  shell: "helm repo add pfisterer-docker-auth https://pfisterer.github.io/docker_auth/"
+
+- name: Update helm repos
+  shell: "helm repo update"
+
+- name: Update helm dependencies for this project
+  shell: "helm dependency update"
+
+- name: Install via helm
+  shell: "helm install  '--namespace={{ binder_namespace }}' -f '{{ docker_reg_temp_config.path }}' '{{ jupyter_docker_registry_release_name }}' pfisterer-docker-auth/docker-auth"

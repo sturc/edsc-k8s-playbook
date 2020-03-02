@@ -1,0 +1,19 @@
+---
+rbac:
+  create: true
+
+domainFilters:
+  - "{{ external_dns_domain_filter }}"
+
+logLevel: "{{ external_dns_log_level }}"
+
+provider: "rfc2136"
+
+rfc2136:
+  host: "{{ rfc2136_host }}"
+  port: "{{ rfc2136_port}}"
+  zone: "{{ rfc2136_zone }}"
+  tsigSecret: "{{ rfc2136_tsigSecret }}"
+  tsigKeyname: "{{ rfc2136_tsigKeyname }}"
+  tsigSecretAlg: "{{ rfc2136_tsigAlg }}"
+  tsigAxfr: "true"

@@ -1,0 +1,19 @@
+- name: Add https://charts.jetstack.io repo to helm
+  shell: "helm repo add jupyterhub https://jupyterhub.github.io/helm-chart"
+
+- name: Update helm repos
+  shell: "helm repo update"
+
+- name: Create temporary file with helm values
+  tempfile:
+    state: file
+    suffix: binderhub-config.yaml
+  register: binderhub_temp_config
+
+- name: Render template content to temporary file
+  template:
+    src: files/binderhub.yaml
+    dest: "{{ binderhub_temp_config.path }}"
+
+- name: Install via helm
+  shell: "helm install '--version={{ binder_release_version }}'  '--namespace={{ binder_namespace }}' -f '{{ binderhub_temp_config.path }}' '{{ binder_release_name }}' 'jupyterhub/binderhub'"

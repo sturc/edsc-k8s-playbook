@@ -1,0 +1,40 @@
+- name: Create temporary directory for self-signed certificate
+  tempfile:
+    state: directory
+    suffix: certificate
+  register: docker_reg_certificates_dir
+
+- name: Generate an OpenSSL private key
+  openssl_privatekey:
+    path: "{{docker_reg_certificates_dir.path}}/privkey.pem"
+
+- name: Generate an OpenSSL CSR
+  openssl_csr:
+    path: "{{docker_reg_certificates_dir.path}}/my.csr"
+    privatekey_path: "{{docker_reg_certificates_dir.path}}/privkey.pem"
+    common_name: "{{ jupyter_docker_registry_cert_issuer }}"
+
+- name: Generate a Self Signed OpenSSL certificate
+  openssl_certificate:
+    privatekey_path: "{{docker_reg_certificates_dir.path}}/privkey.pem"
+    csr_path: "{{docker_reg_certificates_dir.path}}/my.csr"
+    path: "{{docker_reg_certificates_dir.path}}/fullchain.pem"
+    provider: selfsigned
+
+- name: Register variables
+  set_fact:
+    key_path: "{{docker_reg_certificates_dir.path}}/privkey.pem"
+    cert_path: "{{docker_reg_certificates_dir.path}}/fullchain.pem"
+
+- name: Register certificate key as base64
+  set_fact:
+    docker_registry_key_base64: "{{ lookup('file', key_path) | b64encode }}"
+    docker_registry_cert_base64: "{{ lookup('file', cert_path) | b64encode }}"
+
+- name: Debug
+  debug:
+    msg: "docker_registry_key_base64: {{ docker_registry_key_base64 }}"
+
+- name: Debug
+  debug:
+    msg: "docker_registry_cert_base64: {{ docker_registry_cert_base64 }}"

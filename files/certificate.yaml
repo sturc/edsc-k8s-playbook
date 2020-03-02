@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: my-certificate
+  namespace: "{{ cert_manager_namespace }}"
+labels:
+  letsencrypt: "true"
+spec:
+  secretName: ingress-certificate-secret
+  dnsNames:
+    - "{{ letsencrypt_cert_cn }}"
+  issuerRef:
+    name: issuer-letsencrypt
+    kind: Issuer
+  commonName: "{{ letsencrypt_cert_cn }}"
