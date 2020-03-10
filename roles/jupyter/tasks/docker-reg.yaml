@@ -36,8 +36,5 @@
 - name: Update helm repos
   shell: "helm repo update"
 
-- name: Update helm dependencies for this project
-  shell: "helm dependency update"
-
 - name: Install via helm
   shell: "helm install  '--namespace={{ binder_namespace }}' -f '{{ docker_reg_temp_config.path }}' '{{ jupyter_docker_registry_release_name }}' pfisterer-docker-auth/docker-auth"
