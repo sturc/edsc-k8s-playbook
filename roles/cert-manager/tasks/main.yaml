@@ -8,6 +8,7 @@
 - name: Check if already installed
   shell: helm status -n '{{ cert_manager_namespace }}' '{{ cert_manager_release_name }}'
   ignore_errors: True
+  no_log: True
   register: cert_manager_status
 
 - name: Set variable to determine whether cert-manager must be installed
@@ -21,11 +22,13 @@
 - name: Delete existing custom ressource definitions for cert-manager
   shell: kubectl delete crd certificates.cert-manager.io issuers.cert-manager.io clusterissuers.cert-manager.io
   ignore_errors: True
+  no_log: True
   when: cert_manager_must_be_installed
 
 - name: Add custom ressource definitions for cert-manager
   shell: kubectl apply --validate=false -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.11/deploy/manifests/00-crds.yaml
   ignore_errors: True
+  no_log: True
   when: cert_manager_must_be_installed
 
 - name: Add https://charts.jetstack.io repo to helm
@@ -51,9 +54,10 @@
 - name: Delete existing secret
   shell: "kubectl -n {{ cert_manager_namespace }} delete secret tsig-secret"
   ignore_errors: True
+  no_log: True
 
 - name: Create secret
-  shell: "kubectl -n {{ cert_manager_namespace }} create secret generic tsig-secret --from-literal=tsig-secret-key={{ rfc2136_tsigSecret }}"
+  shell: "kubectl -n {{ cert_manager_namespace }} create secret generic tsig-secret '--from-literal=tsig-secret-key={{ rfc2136_tsigSecret }}'"
 
 - name: Create a letsencrypt issuer
   k8s:

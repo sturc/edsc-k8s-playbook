@@ -8,6 +8,7 @@
 - name: Check if already installed
   shell: helm status -n '{{ external_dns_namespace }}' '{{ external_dns_release_name }}'
   ignore_errors: True
+  no_log: True
   register: external_dns_status
 
 - name: Create temporary file with helm values for external DNS

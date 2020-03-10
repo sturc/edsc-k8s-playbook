@@ -8,6 +8,7 @@
 - name: Check if already installed
   shell: helm status -n '{{ hadoop_namespace }}' '{{ hadoop_release_name }}'
   ignore_errors: True
+  no_log: True
   register: hadoop_status
 
 - name: Install via helm
@@ -17,6 +18,7 @@
 - name: Check if knox is already installed
   shell: helm status -n '{{ hadoop_namespace }}' '{{ knox_release_name }}'
   ignore_errors: True
+  no_log: True
   register: knox_status
   when:
     - knox_enable
