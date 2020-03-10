@@ -8,6 +8,7 @@
 - name: Delete existing secret
   shell: "kubectl -n {{ binder_namespace }} delete secret {{ name }}-docker-registry-cert"
   ignore_errors: True
+  no_log: True
 
 - name: Render secret yaml content to temporary file
   template:
