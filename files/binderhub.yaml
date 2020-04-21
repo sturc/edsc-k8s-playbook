@@ -19,6 +19,11 @@ debug:
   enabled: true
 
 jupyterhub:
+  cull:
+    enabled: true
+    timeout: 3600 # max-idle-seconds-before-user-pod-is-deleted
+    every: 60 # number-of-seconds-this-check-is-done
+    max_age: 28800 # maximum age (in seconds) of servers that should be culled even if they are active, 28800 = 60*60*8
   singleuser:
     storage:
       type: none
