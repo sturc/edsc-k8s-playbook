@@ -3,7 +3,8 @@ registry:
   username: "{{ jupyter_docker_registry_username }}"
   password: "{{ docker_reg_passwd }}"
 
-config:
+  GitHubRepoProvider:
+    access_token: db59780b9ec770cafd235a23223e883bcad90079
   BinderHub:
     hub_url: "https://{{ jupyter_ingress_hostname }}/"
     use_registry: true
