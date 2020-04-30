@@ -7,6 +7,11 @@
 - Conditional import in "Create K8S deployment" does not work
 - Binder Tokens should be randomly generated
 
+- Add option to configure a github access token in `files/binderhub.yaml`
+	```GitHubRepoProvider:
+		access_token: dsdfdfasdfsdf978asdfasdfassadfasdf79
+	```
+
 ## Getting started
 
 1. Download/clone <https://github.com/infraly/k8s-on-openstack>.
