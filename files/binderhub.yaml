@@ -78,9 +78,9 @@ initContainers:
 extraVolumes:
   - name: docker-registry-cert
     secret:
-      secretName: "{{ name }}-docker-registry-cert"
+      secretName: "{{ name }}-docker-registry-tls-secret"
       items:
-        - key: registryCert
+        - key: tls.crt
           path: custom-docker-reg-root-ca.crt
   - name: ssl-certs
     emptyDir: {}

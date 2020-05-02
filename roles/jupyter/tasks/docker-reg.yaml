@@ -1,6 +1,6 @@
 ---
 # ----------------------------------------------------------
-# Render the certificate to a file
+# Render the docker reg certificate to a file
 # ----------------------------------------------------------
 - name: Create temporary file with the secret certificate
   tempfile:

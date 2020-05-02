@@ -39,7 +39,7 @@ ingress:
         - "{{ jupyter_docker_registry_auth_hostname }}"
 
 docker-registry:
-  tlsSecretName: "{{ name }}-docker-registry-tls-secret"
+  tlsSecretName: "{{ name }}-docker-registry-cert"
 
   configData:
     log:
@@ -78,5 +78,5 @@ docker-registry:
       secret:
         secretName: "{{ name }}-docker-registry-cert"
         items:
-          - key: tokenAuthRootCertBundle
+          - key: tls.crt
             path: cert.pem

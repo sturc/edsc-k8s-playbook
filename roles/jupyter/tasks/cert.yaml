@@ -14,18 +14,18 @@
 
 - name: Create certificate signing request
   openssl_csr:
-    common_name: "Root CA"
-    country_name: "DE"
-    email_address: "nonexistent@example.com"
-    locality_name: "Monnem"
-    organization_name: "Example Inc."
+    common_name: "Docker Registry Root CA"
+    #    country_name: "DE"
+    #    email_address: "nonexistent@example.com"
+    #    locality_name: "Monnem"
+    #    organization_name: "Example Inc."
     key_usage:
       - digitalSignature
       - keyCertSign
       - cRLSign
-    key_usage_critical: yes
+    #    key_usage_critical: yes
     basic_constraints:
-      - CA:TRUE
+      - "CA:TRUE"
     basic_constraints_critical: yes
     use_common_name_for_san: false
     privatekey_path: "{{cert_dir.path}}/ca-privkey.pem"
@@ -33,16 +33,20 @@
 
 - name: Create self-signed certificate
   openssl_certificate:
+    provider: selfsigned
+    # selfsigned_create_subject_key_identifier: always_create
     csr_path: "{{cert_dir.path}}/ca-csr.csr"
     privatekey_path: "{{cert_dir.path}}/ca-privkey.pem"
-    provider: selfsigned
-    selfsigned_create_subject_key_identifier: always_create
     path: "{{cert_dir.path}}/ca.crt"
 
 - name: Get information on generated CA certificate
   openssl_certificate_info:
     path: "{{cert_dir.path}}/ca.crt"
   register: ca_cert_info_result
+
+- name: Dump CA information
+  debug:
+    var: ca_cert_info_result
 
 ######################################################################
 # Docker Registry Cert
@@ -90,21 +94,42 @@
     path: "{{cert_dir.path}}/server.crt"
   register: server_cert_info_result
 
+- name: Dump Server information
+  debug:
+    var: server_cert_info_result
+
+######################################################################
+# Create Full PEM Chain
+######################################################################
+
+- name: Create certificate chain
+  set_fact:
+    cert_chain_list:
+      - "{{ lookup('file', cert_path) }}"
+      - "{{ lookup('file', ca_cert_path) }}"
+
+- name: Concatenate the certificates
+  set_fact:
+    cert_chain_pem: "{{ cert_chain_list | join('\n') }}"
+
+######################################################################
+# Register variables
+######################################################################
+
 - name: Register certificate key as base64
   set_fact:
     docker_registry_ca_key_base64: "{{ lookup('file', ca_key_path) | b64encode }}"
     docker_registry_ca_cert_base64: "{{ lookup('file', ca_cert_path) | b64encode }}"
     docker_registry_key_base64: "{{ lookup('file', key_path) | b64encode }}"
     docker_registry_cert_base64: "{{ lookup('file', cert_path) | b64encode }}"
+    docker_registry_cert_chain_base64: "{{ cert_chain_pem | b64encode }}"
 
 ######################################################################
 # Debug
 ######################################################################
 
-- name: Dump CA information
+- name: Resulting files
   debug:
-    var: ca_cert_info_result
-
-- name: Dump Server information
-  debug:
-    var: server_cert_info_result
+    msg:
+      - "CA root cert: {{ cert_path }}"
+      - "Server cert: {{ ca_cert_path }}"
