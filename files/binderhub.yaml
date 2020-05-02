@@ -62,13 +62,13 @@ ingress:
         - "{{ jupyter_ingress_binder_hostname }}"
 
 initContainers:
-  - name: InitializeCustomRootCA
+  - name: initialize-custom-root-ca
     image: debian:latest
     imagePullPolicy: Always
     command:
       - sh
       - -c
-      - apt update && apt-install -y ca-certificates openssl && cp /var/tmp/* /usr/local/share/ca-certificates && update-ca-certificates && cp /etc/ssl/certs/* /tmp/
+      - apt-get update && apt-get install -y ca-certificates openssl && cp -v /var/tmp/* /usr/local/share/ca-certificates && openssl x509 -in /var/tmp/*.crt -text && update-ca-certificates --verbose && cp -v /etc/ssl/certs/* /tmp/
     volumeMounts:
       - mountPath: /var/tmp
         name: docker-registry-cert
@@ -80,11 +80,13 @@ extraVolumes:
     secret:
       secretName: "{{ name }}-docker-registry-cert"
       items:
-        - key: rootCaCert
-          path: custom-docker-reg-root-ca.pem
+        - key: registryCert
+          path: custom-docker-reg-root-ca.crt
   - name: ssl-certs
     emptyDir: {}
 
 extraVolumeMounts:
   - mountPath: /etc/ssl/certs
     name: ssl-certs
+  - mountPath: /var/tmp/ssl-certs
+    name: docker-registry-cert

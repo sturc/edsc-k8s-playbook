@@ -39,6 +39,11 @@
     selfsigned_create_subject_key_identifier: always_create
     path: "{{cert_dir.path}}/ca.crt"
 
+- name: Get information on generated CA certificate
+  openssl_certificate_info:
+    path: "{{cert_dir.path}}/ca.crt"
+  register: ca_cert_info_result
+
 ######################################################################
 # Docker Registry Cert
 ######################################################################
@@ -56,6 +61,10 @@
     locality_name: "Auch Monnem"
     country_name: "DE"
     subject_alt_name:
+      - DNS:docker-registry
+      - DNS:docker-registry.{{ binder_namespace }}
+      - DNS:docker-registry.{{ binder_namespace }}.svc
+      - DNS:docker-registry.{{ binder_namespace }}.svc.cluster
       - DNS:docker-registry.{{ binder_namespace }}.svc.cluster.local
     privatekey_path: "{{cert_dir.path}}/server.key"
     path: "{{cert_dir.path}}/server.csr"
@@ -76,6 +85,11 @@
     key_path: "{{cert_dir.path}}/server.key"
     cert_path: "{{cert_dir.path}}/server.crt"
 
+- name: Get information on generated server certificate
+  openssl_certificate_info:
+    path: "{{cert_dir.path}}/server.crt"
+  register: server_cert_info_result
+
 - name: Register certificate key as base64
   set_fact:
     docker_registry_ca_key_base64: "{{ lookup('file', ca_key_path) | b64encode }}"
@@ -83,10 +97,14 @@
     docker_registry_key_base64: "{{ lookup('file', key_path) | b64encode }}"
     docker_registry_cert_base64: "{{ lookup('file', cert_path) | b64encode }}"
 
-- name: Debug
+######################################################################
+# Debug
+######################################################################
+
+- name: Dump CA information
   debug:
-    msg:
-      - "docker_registry_ca_key_base64: {{ docker_registry_ca_key_base64 }}"
-      - "docker_registry_ca_cert_base64: {{ docker_registry_ca_cert_base64 }}"
-      - "docker_registry_key_base64: {{ docker_registry_key_base64 }}"
-      - "docker_registry_cert_base64: {{ docker_registry_cert_base64 }}"
+    var: ca_cert_info_result
+
+- name: Dump Server information
+  debug:
+    var: server_cert_info_result

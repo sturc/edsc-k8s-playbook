@@ -39,11 +39,14 @@ ingress:
         - "{{ jupyter_docker_registry_auth_hostname }}"
 
 docker-registry:
+  tlsSecretName: "{{ name }}-docker-registry-tls-secret"
+
   configData:
     log:
       level: debug
       accesslog:
         disabled: false
+
     auth:
       token:
         autoredirect: false
