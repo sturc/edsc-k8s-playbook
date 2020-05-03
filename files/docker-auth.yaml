@@ -14,11 +14,16 @@ configmap:
       - match: { account: "" }
         actions: ["pull"]
         comment: "Anonymous users can pull"
+
 secret:
-  data:
-    server:
-      certificate: "{{ docker_registry_cert_base64 }}"
-      key: "{{ docker_registry_key_base64 }}"
+  # data: {}
+  secretName: "{{ name }}-docker-registry-cert"
+
+#blablubb:
+#  data:
+#    server:
+#      certificate: "{{ docker_registry_cert_base64 }}"
+#      key: "{{ docker_registry_key_base64 }}"
 
 registry:
   enabled: true
@@ -51,7 +56,8 @@ docker-registry:
       token:
         autoredirect: false
         issuer: "{{ jupyter_docker_registry_cert_issuer }}"
-        realm: "https://{{ jupyter_docker_registry_auth_hostname }}/auth"
+        #realm: "https://{{ jupyter_docker_registry_auth_hostname }}/auth"
+        realm: "http://docker-registry-docker-auth:5001/auth"
         service: "token-service"
         rootcertbundle: "/tokenAuthRootCertBundle/cert.pem"
 

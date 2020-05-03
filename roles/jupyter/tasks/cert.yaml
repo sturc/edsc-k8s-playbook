@@ -52,7 +52,7 @@
 # Docker Registry Cert
 ######################################################################
 
-- name: Create key pair for the end-entity
+- name: Create server key for docker registry
   openssl_privatekey:
     path: "{{cert_dir.path}}/server.key"
     size: 2048
@@ -70,6 +70,11 @@
       - DNS:docker-registry.{{ binder_namespace }}.svc
       - DNS:docker-registry.{{ binder_namespace }}.svc.cluster
       - DNS:docker-registry.{{ binder_namespace }}.svc.cluster.local
+      - DNS:docker-auth
+      - DNS:docker-auth.{{ binder_namespace }}
+      - DNS:docker-auth.{{ binder_namespace }}.svc
+      - DNS:docker-auth.{{ binder_namespace }}.svc.cluster
+      - DNS:docker-auth.{{ binder_namespace }}.svc.cluster.local
     privatekey_path: "{{cert_dir.path}}/server.key"
     path: "{{cert_dir.path}}/server.csr"
 
@@ -82,13 +87,6 @@
     ownca_create_subject_key_identifier: always_create
     path: "{{cert_dir.path}}/server.crt"
 
-- name: Register variables
-  set_fact:
-    ca_key_path: "{{cert_dir.path}}/ca-privkey.pem"
-    ca_cert_path: "{{cert_dir.path}}/ca.crt"
-    key_path: "{{cert_dir.path}}/server.key"
-    cert_path: "{{cert_dir.path}}/server.crt"
-
 - name: Get information on generated server certificate
   openssl_certificate_info:
     path: "{{cert_dir.path}}/server.crt"
@@ -99,22 +97,15 @@
     var: server_cert_info_result
 
 ######################################################################
-# Create Full PEM Chain
-######################################################################
-
-- name: Create certificate chain
-  set_fact:
-    cert_chain_list:
-      - "{{ lookup('file', cert_path) }}"
-      - "{{ lookup('file', ca_cert_path) }}"
-
-- name: Concatenate the certificates
-  set_fact:
-    cert_chain_pem: "{{ cert_chain_list | join('\n') }}"
-
-######################################################################
 # Register variables
 ######################################################################
+
+- name: Register variables
+  set_fact:
+    ca_key_path: "{{cert_dir.path}}/ca-privkey.pem"
+    ca_cert_path: "{{cert_dir.path}}/ca.crt"
+    key_path: "{{cert_dir.path}}/server.key"
+    cert_path: "{{cert_dir.path}}/server.crt"
 
 - name: Register certificate key as base64
   set_fact:
@@ -122,7 +113,6 @@
     docker_registry_ca_cert_base64: "{{ lookup('file', ca_cert_path) | b64encode }}"
     docker_registry_key_base64: "{{ lookup('file', key_path) | b64encode }}"
     docker_registry_cert_base64: "{{ lookup('file', cert_path) | b64encode }}"
-    docker_registry_cert_chain_base64: "{{ cert_chain_pem | b64encode }}"
 
 ######################################################################
 # Debug

@@ -67,3 +67,7 @@
 
 - name: Install via helm
   shell: "helm install  '--namespace={{ binder_namespace }}' -f '{{ docker_reg_temp_config.path }}' '{{ jupyter_docker_registry_release_name }}' pfisterer-docker-auth/docker-auth"
+
+- name: Debug
+  debug:
+    msg: "Running command: helm install  '--namespace={{ binder_namespace }}' -f '{{ docker_reg_temp_config.path }}' '{{ jupyter_docker_registry_release_name }}' pfisterer-docker-auth/docker-auth"
