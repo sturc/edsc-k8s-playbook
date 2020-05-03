@@ -1,53 +1,24 @@
----
-# ----------------------------------------------------------
-# Render the docker reg certificate to a file
-# ----------------------------------------------------------
+# Render the certificate to a file
 - name: Create temporary file with the secret certificate
   tempfile:
     state: file
     suffix: docker-reg-secret.yaml
   register: docker_reg_secret_config
 
-- name: Render secret yaml content to temporary file
-  template:
-    src: files/docker-reg-secret.yaml
-    dest: "{{ docker_reg_secret_config.path }}"
-
 - name: Delete existing secret
   shell: "kubectl -n {{ binder_namespace }} delete secret {{ name }}-docker-registry-cert"
   ignore_errors: True
   no_log: True
 
+- name: Render secret yaml content to temporary file
+  template:
+    src: files/docker-reg-secret.yaml
+    dest: "{{ docker_reg_secret_config.path }}"
+
 - name: Create secret
   shell: "kubectl apply -f '{{ docker_reg_secret_config.path }}'"
 
-# ----------------------------------------------------------
-# Create TLS config
-# ----------------------------------------------------------
-
-- name: TLS cert - Create temporary file
-  tempfile:
-    state: file
-    suffix: docker-registry-tls-secret.yaml
-  register: docker_reg_tls_secret
-
-- name: TLS cert - Render secret yaml content to temporary file
-  template:
-    src: files/docker-registry-tls-secret.yaml
-    dest: "{{ docker_reg_tls_secret.path }}"
-
-- name: TLS cert - Delete existing secret
-  shell: "kubectl -n {{ binder_namespace }} delete secret {{ name }}-docker-registry-tls-secret"
-  ignore_errors: True
-  no_log: True
-
-- name: TLS cert - Create secret
-  shell: "kubectl apply -f '{{ docker_reg_tls_secret.path }}'"
-
-# ----------------------------------------------------------
 # Render the config to a temp file
-# ----------------------------------------------------------
-
 - name: Create temporary file with helm values
   tempfile:
     state: file
@@ -67,7 +38,3 @@
 
 - name: Install via helm
   shell: "helm install  '--namespace={{ binder_namespace }}' -f '{{ docker_reg_temp_config.path }}' '{{ jupyter_docker_registry_release_name }}' pfisterer-docker-auth/docker-auth"
-
-- name: Debug
-  debug:
-    msg: "Running command: helm install  '--namespace={{ binder_namespace }}' -f '{{ docker_reg_temp_config.path }}' '{{ jupyter_docker_registry_release_name }}' pfisterer-docker-auth/docker-auth"

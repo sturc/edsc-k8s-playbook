@@ -1,20 +1,15 @@
 registry:
-  # url: "{{ jupyter_docker_registry_url }}"
-  url: "https://docker-registry:5000/"
+  url: "{{ jupyter_docker_registry_url }}"
   username: "{{ jupyter_docker_registry_username }}"
   password: "{{ docker_reg_passwd }}"
 
-config:
   BinderHub:
-    # hub_url: "https://{{ jupyter_ingress_hostname }}/"
-    hub_url: "http://hub:8081/"
+    hub_url: "https://{{ jupyter_ingress_hostname }}/"
     use_registry: true
-    # image_prefix: "{{ jupyter_docker_registry_image_prefix }}"
-    image_prefix: "docker-registry/admin/hubimage-"
+    image_prefix: "{{ jupyter_docker_registry_image_prefix }}"
     debug: true
   DockerRegistry:
-    token_url: "http://docker-registry-docker-auth:5001/auth?service=token-service"
-    #token_url: "{{ jupyter_docker_registry_token_url }}"
+    token_url: "{{ jupyter_docker_registry_token_url }}"
 
 service:
   type: ClusterIP
@@ -25,7 +20,7 @@ debug:
 jupyterhub:
   cull:
     enabled: true
-    timeout: 3600 # max-idle-seds-before-user-pod-is-deleted
+    timeout: 3600 # max-idle-seconds-before-user-pod-is-deleted
     every: 60 # number-of-seconds-this-check-is-done
     max_age: 28800 # maximum age (in seconds) of servers that should be culled even if they are active, 28800 = 60*60*8
   singleuser:
@@ -65,33 +60,3 @@ ingress:
   tls:
     - hosts:
         - "{{ jupyter_ingress_binder_hostname }}"
-
-initContainers:
-  - name: initialize-custom-root-ca
-    image: debian:latest
-    imagePullPolicy: Always
-    command:
-      - sh
-      - -c
-      - apt-get update && apt-get install -y ca-certificates openssl && cp -v /var/tmp/* /usr/local/share/ca-certificates && openssl x509 -in /var/tmp/*.crt -text && update-ca-certificates --verbose && cp -v /etc/ssl/certs/* /tmp/
-    volumeMounts:
-      - mountPath: /var/tmp
-        name: docker-registry-cert
-      - mountPath: /tmp/
-        name: ssl-certs
-
-extraVolumes:
-  - name: docker-registry-cert
-    secret:
-      secretName: "{{ name }}-docker-registry-tls-secret"
-      items:
-        - key: tls.crt
-          path: custom-docker-reg-root-ca.crt
-  - name: ssl-certs
-    emptyDir: {}
-
-extraVolumeMounts:
-  - mountPath: /etc/ssl/certs
-    name: ssl-certs
-  - mountPath: /var/tmp/ssl-certs
-    name: docker-registry-cert

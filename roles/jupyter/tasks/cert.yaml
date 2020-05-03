@@ -2,124 +2,39 @@
   tempfile:
     state: directory
     suffix: certificate
-  register: cert_dir
-
-######################################################################
-# CA
-######################################################################
+  register: docker_reg_certificates_dir
 
 - name: Generate an OpenSSL private key
   openssl_privatekey:
-    path: "{{cert_dir.path}}/ca-privkey.pem"
+    path: "{{docker_reg_certificates_dir.path}}/privkey.pem"
 
-- name: Create certificate signing request
+- name: Generate an OpenSSL CSR
   openssl_csr:
-    common_name: "Docker Registry Root CA"
-    #    country_name: "DE"
-    #    email_address: "nonexistent@example.com"
-    #    locality_name: "Monnem"
-    #    organization_name: "Example Inc."
-    key_usage:
-      - digitalSignature
-      - keyCertSign
-      - cRLSign
-    #    key_usage_critical: yes
-    basic_constraints:
-      - "CA:TRUE"
-    basic_constraints_critical: yes
-    use_common_name_for_san: false
-    privatekey_path: "{{cert_dir.path}}/ca-privkey.pem"
-    path: "{{cert_dir.path}}/ca-csr.csr"
+    path: "{{docker_reg_certificates_dir.path}}/my.csr"
+    privatekey_path: "{{docker_reg_certificates_dir.path}}/privkey.pem"
+    common_name: "{{ jupyter_docker_registry_cert_issuer }}"
 
-- name: Create self-signed certificate
+- name: Generate a Self Signed OpenSSL certificate
   openssl_certificate:
+    privatekey_path: "{{docker_reg_certificates_dir.path}}/privkey.pem"
+    csr_path: "{{docker_reg_certificates_dir.path}}/my.csr"
+    path: "{{docker_reg_certificates_dir.path}}/fullchain.pem"
     provider: selfsigned
-    # selfsigned_create_subject_key_identifier: always_create
-    csr_path: "{{cert_dir.path}}/ca-csr.csr"
-    privatekey_path: "{{cert_dir.path}}/ca-privkey.pem"
-    path: "{{cert_dir.path}}/ca.crt"
-
-- name: Get information on generated CA certificate
-  openssl_certificate_info:
-    path: "{{cert_dir.path}}/ca.crt"
-  register: ca_cert_info_result
-
-- name: Dump CA information
-  debug:
-    var: ca_cert_info_result
-
-######################################################################
-# Docker Registry Cert
-######################################################################
-
-- name: Create server key for docker registry
-  openssl_privatekey:
-    path: "{{cert_dir.path}}/server.key"
-    size: 2048
-
-- name: Create certificate signing request
-  openssl_csr:
-    common_name: "{{ jupyter_docker_registry_hostname }}"
-    organization_name: "Docker Registry Example Inc."
-    email_address: "docker-registry@example.com"
-    locality_name: "Auch Monnem"
-    country_name: "DE"
-    subject_alt_name:
-      - DNS:docker-registry
-      - DNS:docker-registry.{{ binder_namespace }}
-      - DNS:docker-registry.{{ binder_namespace }}.svc
-      - DNS:docker-registry.{{ binder_namespace }}.svc.cluster
-      - DNS:docker-registry.{{ binder_namespace }}.svc.cluster.local
-      - DNS:docker-auth
-      - DNS:docker-auth.{{ binder_namespace }}
-      - DNS:docker-auth.{{ binder_namespace }}.svc
-      - DNS:docker-auth.{{ binder_namespace }}.svc.cluster
-      - DNS:docker-auth.{{ binder_namespace }}.svc.cluster.local
-    privatekey_path: "{{cert_dir.path}}/server.key"
-    path: "{{cert_dir.path}}/server.csr"
-
-- name: Create certificate for server
-  openssl_certificate:
-    csr_path: "{{cert_dir.path}}/server.csr"
-    provider: ownca
-    ownca_privatekey_path: "{{cert_dir.path}}/ca-privkey.pem"
-    ownca_path: "{{cert_dir.path}}/ca.crt"
-    ownca_create_subject_key_identifier: always_create
-    path: "{{cert_dir.path}}/server.crt"
-
-- name: Get information on generated server certificate
-  openssl_certificate_info:
-    path: "{{cert_dir.path}}/server.crt"
-  register: server_cert_info_result
-
-- name: Dump Server information
-  debug:
-    var: server_cert_info_result
-
-######################################################################
-# Register variables
-######################################################################
 
 - name: Register variables
   set_fact:
-    ca_key_path: "{{cert_dir.path}}/ca-privkey.pem"
-    ca_cert_path: "{{cert_dir.path}}/ca.crt"
-    key_path: "{{cert_dir.path}}/server.key"
-    cert_path: "{{cert_dir.path}}/server.crt"
+    key_path: "{{docker_reg_certificates_dir.path}}/privkey.pem"
+    cert_path: "{{docker_reg_certificates_dir.path}}/fullchain.pem"
 
 - name: Register certificate key as base64
   set_fact:
-    docker_registry_ca_key_base64: "{{ lookup('file', ca_key_path) | b64encode }}"
-    docker_registry_ca_cert_base64: "{{ lookup('file', ca_cert_path) | b64encode }}"
     docker_registry_key_base64: "{{ lookup('file', key_path) | b64encode }}"
     docker_registry_cert_base64: "{{ lookup('file', cert_path) | b64encode }}"
 
-######################################################################
-# Debug
-######################################################################
-
-- name: Resulting files
+- name: Debug
   debug:
-    msg:
-      - "CA root cert: {{ cert_path }}"
-      - "Server cert: {{ ca_cert_path }}"
+    msg: "docker_registry_key_base64: {{ docker_registry_key_base64 }}"
+
+- name: Debug
+  debug:
+    msg: "docker_registry_cert_base64: {{ docker_registry_cert_base64 }}"

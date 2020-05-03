@@ -17,9 +17,3 @@
 
 - name: Install via helm
   shell: "helm install '--version={{ binder_release_version }}'  '--namespace={{ binder_namespace }}' -f '{{ binderhub_temp_config.path }}' '{{ binder_release_name }}' 'jupyterhub/binderhub'"
-
-- name: Binderhub config
-  debug:
-    msg:
-      - "Binderhubg config: {{binderhub_temp_config.path}}"
-      - "Command used: helm install '--version={{ binder_release_version }}'  '--namespace={{ binder_namespace }}' -f '{{ binderhub_temp_config.path }}' '{{ binder_release_name }}' 'jupyterhub/binderhub'"

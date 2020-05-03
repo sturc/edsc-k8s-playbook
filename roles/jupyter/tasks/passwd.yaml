@@ -29,4 +29,3 @@
     msg:
       - "htpasswd line: {{ htpasswd_line }}"
       - "pw hash: {{ docker_reg_pw_hash }}"
-      - "password: {{ docker_reg_passwd }}"
