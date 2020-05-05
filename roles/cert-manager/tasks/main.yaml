@@ -59,10 +59,10 @@
 - name: Create secret
   shell: "kubectl -n {{ cert_manager_namespace }} create secret generic tsig-secret '--from-literal=tsig-secret-key={{ rfc2136_tsigSecret }}'"
 
-- name: Create a letsencrypt issuer
-  k8s:
-    state: present
-    definition: "{{ lookup('template', '{{ playbook_dir }}/files/letsencrypt-issuer.yaml') }}"
+#- name: Create a letsencrypt issuer
+#  k8s:
+#    state: present
+#    definition: "{{ lookup('template', '{{ playbook_dir }}/files/letsencrypt-issuer.yaml') }}"
 
 - name: Create wildcard certificate
   k8s:

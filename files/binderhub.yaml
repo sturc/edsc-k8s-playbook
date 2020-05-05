@@ -1,7 +1,7 @@
 registry:
-  url: "{{ jupyter_docker_registry_url }}"
+  # url: "{{ jupyter_docker_registry_url }}"
   username: "{{ jupyter_docker_registry_username }}"
-  password: "{{ docker_reg_passwd }}"
+  password: "{{ jupyter_docker_registry_password }}"
 
 config:
   BinderHub:
@@ -9,8 +9,8 @@ config:
     use_registry: true
     image_prefix: "{{ jupyter_docker_registry_image_prefix }}"
     debug: true
-  DockerRegistry:
-    token_url: "{{ jupyter_docker_registry_token_url }}"
+  #DockerRegistry:
+  #  token_url: "{{ jupyter_docker_registry_token_url }}"
 
 service:
   type: ClusterIP
